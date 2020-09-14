@@ -1,42 +1,40 @@
-#Base debian
 FROM debian:buster-slim as squid_builder
 
-#Instalaremos dependencias necesarias para compilar
-RUN apt update -y 
-RUN apt -y install \ 
-   build-essential \
-   devscripts \
-   fakeroot \
-   debhelper \
-   dh-autoreconf \
-   dh-apparmor \
-   cdbs \
-   smbclient \
-   software-properties-common \
-   wget \
-   tar --no-install-recommends && \
-   apt-add-repository "deb http://deb.debian.org/debian buster-backports main" && \
-   apt -y update
-RUN apt -y install \
-  libcppunit-dev \
-  libsasl2-dev \
-  libxml2-dev \
-  libkrb5-dev \
-  libdb-dev \
-  libnetfilter-conntrack-dev \
-  libexpat1-dev \
-  libcap2-dev \
-  libldap2-dev \
-  libpam0g-dev \
-  libgnutls28-dev \
-  libssl-dev \
-  libdbi-perl \
-  libecap3 \
-  libecap3-dev \
-  libsystemd-dev \
-  libtdb-dev \
-  checkinstall  --no-install-recommends && \
- rm -rf /var/lib/apt/lists/*
+#add backports repo
+RUN echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/debian-backports.list
+
+#Install required packages
+RUN apt update -y && \
+  apt -y install \ 
+    build-essential \
+    devscripts \
+    fakeroot \
+    debhelper \
+    dh-autoreconf \
+    dh-apparmor \
+    cdbs \
+    smbclient \
+    wget \
+    tar \
+    libcppunit-dev \
+    libsasl2-dev \
+    libxml2-dev \
+    libkrb5-dev \
+    libdb-dev \
+    libnetfilter-conntrack-dev \
+    libexpat1-dev \
+    libcap2-dev \
+    libldap2-dev \
+    libpam0g-dev \
+    libgnutls28-dev \
+    libssl-dev \
+    libdbi-perl \
+    libecap3 \
+    libecap3-dev \
+    libsystemd-dev \
+    libtdb-dev \
+    checkinstall --no-install-recommends && \
+  rm -rf /var/lib/apt/lists/*
 
 #Crearemos los directorios necesarios durante el proceso de compilacion
 RUN mkdir -p /usr/share/squid \
