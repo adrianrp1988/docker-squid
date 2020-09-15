@@ -82,7 +82,7 @@ RUN make -j `nproc` && \
   --conflicts="squid3" \
   --requires="libcppunit-dev, libsasl2-dev, libxml2-dev, libkrb5-dev, libdb-dev, libnetfilter-conntrack-dev, libexpat1-dev, libcap2-dev, libldap2-dev, libpam0g-dev, libgnutls28-dev, libssl-dev, libdbi-perl, libecap3, libecap3-dev, libsystemd-dev, libtdb-dev"
 
-FROM debian:buster-slim as squid5
+FROM debian:buster-slim
 COPY --from=squid_builder /opt/squid_5.0.4-22082020_amd64.deb /opt
 
 RUN apt update && \
@@ -96,12 +96,8 @@ RUN apt update && \
 	rm /opt/squid_5.0.4-22082020_amd64.deb
 
 #Copiamos archivos necesarios
-COPY squid /etc/init.d/squid
-COPY squid.conf /etc/squid/squid.conf
-COPY setup.sh entrypoint.sh /opt/
-RUN chmod 755 /opt/*.sh && \
-  chmod +x /opt/*.sh
-RUN "/opt/setup.sh"
+COPY squid.conf setup.sh entrypoint.sh /opt/
+RUN /opt/setup.sh
 
 USER proxy
 

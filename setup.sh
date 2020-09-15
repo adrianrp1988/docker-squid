@@ -26,6 +26,7 @@ fi
 }
 
 create_conf_dir(){
+  mv /opt/squid.conf /etc/squid
   chown -R proxy:proxy  /etc/squid/
 if [[ -n ${CUSTOM_CONFIG_FILE} ]]; then
   mkdir -p /etc/squid/conf.d
