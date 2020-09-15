@@ -1,26 +1,45 @@
 #!/bin/bash
 set -e
 
-create_log_dir() {
+setup_logging() {
 if [[ -n ${SQUID_LOG_DIR} ]]; then
   mkdir -p ${SQUID_LOG_DIR}
   chmod -R 755 ${SQUID_LOG_DIR}
-  chown -R ${SQUID_USER}:${SQUID_USER} ${SQUID_LOG_DIR}
+  chown -R proxy:proxy ${SQUID_LOG_DIR}
+  sed -i 's+#Logs+
+  access_log stdio:'${SQUID_LOG_DIR}'/access.log
+  +g' /etc/squid/squid.conf
+  if [[ -n ${SQUID_CACHE_DIR} ]]; then
+    sed -i 's+#LogsCache+
+    #Cache dir Logs:
+    cache_log stdio:'${SQUID_LOG_DIR}'/cache.log
+    cache_store_log stdio:'${SQUID_LOG_DIR}'/store.log
+    +g' /etc/squid/squid.conf
+  else
+    sed -i 's+#LogsCache++g' /etc/squid/squid.conf
+  fi
 else
   mkdir -p /var/log/squid
   chmod -R 755 /var/log/squid
   chown -R proxy:proxy /var/log/squid
+  sed -i 's+#LogsCache++g' /etc/squid/squid.conf
+  sed -i 's+#Logs++g' /etc/squid/squid.conf
 fi
 }
 
-create_cache_dir() {
+setup_cache() {
 if [[ -n ${SQUID_CACHE_DIR} ]]; then
   mkdir -p ${SQUID_CACHE_DIR}
-  chown -R ${SQUID_USER}:${SQUID_USER} ${SQUID_CACHE_DIR}
+  chown -R proxy:proxy  ${SQUID_CACHE_DIR}
+  sed -i 's+#Cache+
+  cache_effective_user proxy
+  cache_effective_group proxy
+
+  # Leave coredumps in the first cache dir
+  coredump_dir {{SQUID_CACHE_DIR}}
+  +g' /etc/squid/squid.conf
 else
-  mkdir -p /var/spool/squid
-  chmod -R 755 /var/spool/squid
-  chown -R proxy:proxy /var/spool/squid
+  sed -i 's+#Cache++g' /etc/squid/squid.conf
 fi
 }
 
@@ -41,24 +60,6 @@ set_basic_confs(){
   else
     sed -i 's/{{VISIBLE_HOSTNAME}}/squid5/g' /etc/squid/squid.conf
   fi
-
-  if [[ -n ${SQUID_USER} ]]; then
-    sed -i 's/{{SQUID_USER}}/'${SQUID_USER}'/g' /etc/squid/squid.conf
-  else
-    sed -i 's/{{SQUID_USER}}/proxy/g' /etc/squid/squid.conf
-  fi
-
-  if [[ -n ${SQUID_LOG_DIR} ]]; then
-    sed -i 's#{{SQUID_LOG_DIR}}#'${SQUID_LOG_DIR}'#g' /etc/squid/squid.conf
-  else
-    sed -i 's#{{SQUID_LOG_DIR}}#/var/log/squid#g' /etc/squid/squid.conf
-  fi
-
-  if [[ -n ${SQUID_CACHE_DIR} ]]; then
-    sed -i 's#{{SQUID_CACHE_DIR}}#'${SQUID_CACHE_DIR}'#g' /etc/squid/squid.conf
-  else
-    sed -i 's#{{SQUID_CACHE_DIR}}#/var/spool/squid#g' /etc/squid/squid.conf
-  fi
 }
 
 set_custom_conf_file(){
@@ -68,16 +69,18 @@ if [[ -n ${CUSTOM_CONFIG_FILE} ]]; then
   chown -R proxy:proxy  /etc/squid/conf.d
   chmod -R 755 /etc/squid/conf.d/*
   chown -R proxy:proxy  /etc/squid/conf.d/*
-  sed -i 's#{{CUSTOM_CONFIG}}#include /etc/squid/conf.d/'${CUSTOM_CONFIG_FILE}'#g' /etc/squid/squid.conf
+  sed -i 's+#Custom+include /etc/squid/conf.d/'${CUSTOM_CONFIG_FILE}'+g' /etc/squid/squid.conf
 else
-  sed -i 's/{{CUSTOM_CONFIG}}/#No custom configuration rules added/g' /etc/squid/squid.conf
+  sed -i 's/#Custom//g' /etc/squid/squid.conf
 fi
 }
 set_service_init_script
-create_log_dir
-create_cache_dir
+setup_logging
+setup_cache
 set_basic_confs
 set_custom_conf_file
+
+chsh -s /bin/bash proxy
 
 # allow arguments to be passed to squid
 if [[ ${1:0:1} = '-' ]]; then
@@ -99,3 +102,5 @@ if [[ -z ${1} ]]; then
 else
   exec "$@"
 fi
+
+
