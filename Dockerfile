@@ -91,6 +91,7 @@ RUN apt update && \
     apt install -y /opt/squid_5.0.4-22082020_amd64.deb  \
 	sudo \
 	wget \
+	apache2-utils \
 	libltdl7 \
 	lsb-base \
 	lsb-release --no-install-recommends && \

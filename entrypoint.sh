@@ -26,7 +26,7 @@ if [[ -n ${SQUID_CACHE_DIR} ]]; then
   cache_effective_group proxy
 
   # Leave coredumps in the first cache dir
-  coredump_dir {{SQUID_CACHE_DIR}}
+  coredump_dir '${SQUID_CACHE_DIR}'
   +g' /etc/squid/squid.conf
 else
   sed -i 's+#Cache++g' /etc/squid/squid.conf
