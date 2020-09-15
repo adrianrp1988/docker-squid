@@ -87,16 +87,22 @@ COPY --from=squid_builder /opt/squid_5.0.4-22082020_amd64.deb /opt
 
 RUN apt update && \
     apt install -y /opt/squid_5.0.4-22082020_amd64.deb  \
+	sudo \
 	wget \
 	libltdl7 \
 	lsb-base \
 	lsb-release --no-install-recommends && \
-	rm -rf /var/lib/apt/lists/*
+	rm -rf /var/lib/apt/lists/* && \
+	rm /opt/squid_5.0.4-22082020_amd64.deb
 
 #Copiamos archivos necesarios
 COPY squid /etc/init.d/squid
 COPY squid.conf /etc/squid/squid.conf
-COPY entrypoint.sh /sbin/entrypoint.sh
-RUN chmod 755 /sbin/entrypoint.sh
+COPY setup.sh entrypoint.sh /opt/
+RUN chmod 755 /opt/*.sh && \
+  chmod +x /opt/*.sh
+RUN "/opt/setup.sh"
 
-ENTRYPOINT ["/sbin/entrypoint.sh"]
+USER proxy
+
+ENTRYPOINT ["/opt/entrypoint.sh"]

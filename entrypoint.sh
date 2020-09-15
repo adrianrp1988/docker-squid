@@ -1,14 +1,9 @@
 #!/bin/bash
 set -e
 
-setup_logging() {
+parse_log_conf() {
 if [[ -n ${SQUID_LOG_DIR} ]]; then
-  mkdir -p ${SQUID_LOG_DIR}
-  chmod -R 755 ${SQUID_LOG_DIR}
-  chown -R proxy:proxy ${SQUID_LOG_DIR}
-  sed -i 's+#Logs+
-  access_log stdio:'${SQUID_LOG_DIR}'/access.log
-  +g' /etc/squid/squid.conf
+  sed -i 's+#Logs+access_log stdio:'${SQUID_LOG_DIR}'/access.log+g' /etc/squid/squid.conf
   if [[ -n ${SQUID_CACHE_DIR} ]]; then
     sed -i 's+#LogsCache+
     #Cache dir Logs:
@@ -19,18 +14,13 @@ if [[ -n ${SQUID_LOG_DIR} ]]; then
     sed -i 's+#LogsCache++g' /etc/squid/squid.conf
   fi
 else
-  mkdir -p /var/log/squid
-  chmod -R 755 /var/log/squid
-  chown -R proxy:proxy /var/log/squid
   sed -i 's+#LogsCache++g' /etc/squid/squid.conf
   sed -i 's+#Logs++g' /etc/squid/squid.conf
 fi
 }
 
-setup_cache() {
+parse_cache_conf() {
 if [[ -n ${SQUID_CACHE_DIR} ]]; then
-  mkdir -p ${SQUID_CACHE_DIR}
-  chown -R proxy:proxy  ${SQUID_CACHE_DIR}
   sed -i 's+#Cache+
   cache_effective_user proxy
   cache_effective_group proxy
@@ -43,12 +33,7 @@ else
 fi
 }
 
-set_service_init_script() {
-  chmod +x /etc/init.d/squid
-  update-rc.d squid defaults
-}
-
-set_basic_confs(){
+parse_basic_conf(){
   if [[ -n ${HTTP_PORT} ]]; then
     sed -i 's/{{HTTP_PORT}}/'${HTTP_PORT}'/g' /etc/squid/squid.conf
   else
@@ -62,25 +47,18 @@ set_basic_confs(){
   fi
 }
 
-set_custom_conf_file(){
+parse_custom_conf(){
 if [[ -n ${CUSTOM_CONFIG_FILE} ]]; then
-  mkdir -p /etc/squid/conf.d
-  chmod -R 755 /etc/squid/conf.d
-  chown -R proxy:proxy  /etc/squid/conf.d
-  chmod -R 755 /etc/squid/conf.d/*
-  chown -R proxy:proxy  /etc/squid/conf.d/*
   sed -i 's+#Custom+include /etc/squid/conf.d/'${CUSTOM_CONFIG_FILE}'+g' /etc/squid/squid.conf
 else
-  sed -i 's/#Custom//g' /etc/squid/squid.conf
+  sed -i 's/#Custom/http_access allow all/g' /etc/squid/squid.conf
 fi
 }
-set_service_init_script
-setup_logging
-setup_cache
-set_basic_confs
-set_custom_conf_file
 
-chsh -s /bin/bash proxy
+parse_log_conf
+parse_cache_conf
+parse_basic_conf
+parse_custom_conf
 
 # allow arguments to be passed to squid
 if [[ ${1:0:1} = '-' ]]; then
@@ -95,10 +73,10 @@ fi
 if [[ -z ${1} ]]; then
   if [[ ! -d ${SQUID_CACHE_DIR}/00 ]]; then
     echo "Initializing cache..."
-    $(which squid) -N -f /etc/squid/squid.conf -z
+    sudo $(which squid) -N -f /etc/squid/squid.conf -z
   fi
   echo "Starting squid..."
-  exec $(which squid) -f /etc/squid/squid.conf -NYCd 1 ${EXTRA_ARGS}
+  exec sudo $(which squid) -f /etc/squid/squid.conf -NYCd 1 ${EXTRA_ARGS}
 else
   exec "$@"
 fi
