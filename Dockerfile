@@ -95,9 +95,7 @@ RUN apt update && \
 	libltdl7 \
 	lsb-base \
 	lsb-release --no-install-recommends && \
-	rm -rf /var/lib/apt/lists/* && \
-    /opt/setup.sh && \
-	rm /opt/*
+    /opt/setup.sh
 
 USER proxy
 

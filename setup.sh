@@ -26,7 +26,7 @@ fi
 }
 
 create_conf_dir(){
-  mv /opt/squid.conf /etc/squid
+  cp /opt/squid.conf /etc/squid
   chown -R proxy:proxy  /etc/squid/
 if [[ -n ${CUSTOM_CONFIG_FILE} ]]; then
   mkdir -p /etc/squid/conf.d
@@ -38,9 +38,17 @@ setup_user(){
   chsh -s /bin/bash proxy
 }
 
+clean_files(){
+  rm /opt/squid.conf
+  rm /opt/squid_5.0.4-22082020_amd64.deb
+  rm /opt/setup.sh
+  rm -rf /var/lib/apt/lists/*
+}
+
 create_log_dir
 create_cache_dir
 create_conf_dir
 setup_user
+clean_files
 
 
